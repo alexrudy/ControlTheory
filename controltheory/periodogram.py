@@ -4,9 +4,19 @@ import scipy.fftpack
 import astropy.units as u
 from logging import getLogger
 
+try:
+    from logging import NullHandler
+except ImportError:
+    pass
+else:
+    log = getLogger(__name__.split(".")[0])
+    log.addHandler(NullHandler())
+    
+__all__ = ['periodogram', 'cosine_window']
+
 def periodogram(data, length=None, window=None, 
     half_overlap=True, suppress_static=False, mean_remove=True, 
-    skip_length=0, start_length=0, clip_length=0, axis=0):
+    skip_length=0, start_length=0, clip_length=0, axis=0, log=None):
     """Make a periodogram from N-dimensional data. The periodogram is windowed
     by default. A custom window (which should be the same size as the expected
     output data) can be passed in at the window parameter.
@@ -34,7 +44,7 @@ def periodogram(data, length=None, window=None,
     
     """
     
-    log = getLogger(__name__ + ".periodogram")
+    log = log or getLogger(__name__ + ".periodogram")
     data = np.asanyarray(data)
     if (not isinstance(skip_length, int)) or skip_length < 0:
         raise ValueError("Parameter skip_length must be a non-negative "
@@ -66,6 +76,7 @@ def periodogram(data, length=None, window=None,
         ["{0:s}={1!r}".format(name, locals()[name]) for name in keys])))
     
     if window is None:
+        log.debug("Defaulting to cosine_window for windowing function.")
         window = extend_axes(cosine_window(periodogram_length), 
             len(psd_shape), fixed_axis=axis)
     
