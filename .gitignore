@@ -31,6 +31,7 @@ docs/_build
 # Packages/installer info
 *.egg
 *.egg-info
+.eggs
 dist
 build
 eggs
