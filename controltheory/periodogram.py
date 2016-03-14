@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-import scipy.fftpack
 import astropy.units as u
 from logging import getLogger
+
+try:
+    import scipy.fftpack as fftpack
+except ImportError:
+    import numpy.fft as fftpack
+    
 
 try:
     from logging import NullHandler
@@ -93,13 +98,13 @@ def periodogram(data, length=None, window=None,
         segment = data[select]
         if suppress_static:
             segment -= segment.mean()
-        psd += np.power(np.abs(scipy.fftpack.fft(segment * window, axis=axis)), 2.0)
+        psd += np.power(np.abs(fftpack.fft(segment * window, axis=axis)), 2.0)
         num_intervals += 1
     psd = np.real(psd)
     psd = psd / (num_intervals)
     psd = psd / np.sum(window**2.0, axis=axis)
     psd = psd / periodogram_length
-    psd = scipy.fftpack.fftshift(psd, axes=axis)
+    psd = fftpack.fftshift(psd, axes=axis)
     return data.__array_wrap__(psd)
     
     
