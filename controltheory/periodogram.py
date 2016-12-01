@@ -182,6 +182,5 @@ def cosine_window(periodogram_length):
     
     """
     ind = np.arange(periodogram_length,dtype=np.float)
-    window = (0.42 - 0.5*np.cos(2.0*np.pi*ind/(periodogram_length-1)) 
-        + 0.08*np.cos(4.0*np.pi*ind/(periodogram_length-1)))
+    window = (0.42 - 0.5 * np.cos(2.0*np.pi*ind/(periodogram_length-1)) + 0.08*np.cos(4.0*np.pi*ind/(periodogram_length-1)))
     return window
