@@ -83,7 +83,7 @@ def periodogram(data, length=None, window=None,
     if window is None:
         log.debug("Defaulting to cosine_window for windowing function.")
         window = extend_axes(cosine_window(periodogram_length), 
-            len(psd_shape), fixed_axis=axis)
+            len(psd_shape) - 1, fixed_axis=axis)
     
     if mean_remove:
         data = data - np.expand_dims(data.mean(axis=axis),axis=axis)
@@ -117,21 +117,26 @@ def periodogram_slices(length, total_length, ndim, half_overlap=True,
             "skip_length={:d} is nonzero.".format(skip_length))
         half_overlap = False
     
-    periodogram_length = length - 2*skip_length
-    data_length = total_length - start_length - clip_length
+    length = int(length)
+    skip_length = int(skip_length)
+    periodogram_length = int(length - 2*skip_length)
+    data_length = int(total_length - start_length - clip_length)
+    start_length = int(start_length)
     
     if half_overlap:
-       num_intervals = np.floor(data_length/(length/2)) - 1
-       start_indices = np.arange(num_intervals)*length/2
+       num_intervals = np.floor(data_length//(length//2)) - 1
+       start_indices = np.arange(num_intervals, dtype=np.int)*length/2
     else:
-       num_intervals = np.floor(data_length/(length))
-       start_indices = np.arange(num_intervals)*length
+       num_intervals = np.floor(data_length//(length))
+       start_indices = np.arange(num_intervals, dtype=np.int)*length
        
     start_indices += start_length
     select = [ slice(None) for i in range(ndim) ]
     for a in start_indices:
         select[axis] = slice(a+skip_length,a+periodogram_length+skip_length)
         assert select[axis].stop - select[axis].start == periodogram_length
+        assert isinstance(select[axis].start, int)
+        assert isinstance(select[axis].stop, int)
         yield tuple(select)
     
 def periodogram_mask(length, total_length, half_overlap=True, skip_length=0,
