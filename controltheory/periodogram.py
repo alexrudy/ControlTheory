@@ -82,11 +82,13 @@ def periodogram(data, length=None, window=None,
     
     if window is None:
         log.debug("Defaulting to cosine_window for windowing function.")
-        window = extend_axes(cosine_window(periodogram_length), 
-            len(psd_shape) - 1, fixed_axis=axis)
+        window = cosine_window(periodogram_length)
+    
+    if window.ndim != len(psd_shape):
+        window = extend_axes(window, len(psd_shape), fixed_axis=axis)
     
     if mean_remove:
-        data = data - np.expand_dims(data.mean(axis=axis),axis=axis)
+        data = data - np.expand_dims(data.mean(axis=axis), axis=axis)
     
     psd = data.__array_prepare__(np.zeros(psd_shape, dtype=np.complex))
     interval_iterator = periodogram_slices(length, total_length,
