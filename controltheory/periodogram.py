@@ -169,10 +169,10 @@ def periodogram_excludes(length, total_length, half_overlap=True,
     
 def extend_axes(array, ndim, fixed_axis=0):
     """Expand the dimensions of a numpy array."""
-    if isinstance(fixed_axis, int):
-        fixed_axis = (fixed_axis,)
-    for dim in range(ndim):
-        if dim not in fixed_axis:
+    expand_axes = [True for i in range(ndim)]
+    expand_axes[fixed_axis] = False
+    for dim, expand in enumerate(expand_axes):
+        if expand:
             array = np.expand_dims(array, axis=dim)
     return array
     
