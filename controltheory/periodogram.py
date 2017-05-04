@@ -21,7 +21,7 @@ __all__ = ['periodogram', 'cosine_window']
 
 def periodogram(data, length=None, window=None, 
     half_overlap=True, suppress_static=False, mean_remove=True, 
-    skip_length=0, start_length=0, clip_length=0, axis=0, log=None):
+    skip_length=0, start_length=0, clip_length=0, axis=0, mask=None, log=None):
     """Make a periodogram from N-dimensional data. The periodogram is windowed
     by default. A custom window (which should be the same size as the expected
     output data) can be passed in at the window parameter.
@@ -46,6 +46,7 @@ def periodogram(data, length=None, window=None,
         the timeseries. Useful for clipping poorly behaved sections.
     :param int axis: The axis along which to make the periodogram. This is
         normally the time-varying axis, and defaults to 0.
+    :param ndarray mask: A mask to eliminate invalid values.
     
     """
     
@@ -93,7 +94,7 @@ def periodogram(data, length=None, window=None,
     psd = data.__array_prepare__(np.zeros(psd_shape, dtype=np.complex))
     interval_iterator = periodogram_slices(length, total_length,
         len(psd_shape), half_overlap=half_overlap, skip_length=skip_length,
-        axis=axis, start_length=start_length, clip_length=clip_length)
+        axis=axis, start_length=start_length, clip_length=clip_length, mask=mask)
     
     num_intervals = 0
     for select in interval_iterator:
@@ -111,7 +112,7 @@ def periodogram(data, length=None, window=None,
     
     
 def periodogram_slices(length, total_length, ndim, half_overlap=True, 
-    skip_length=0, start_length=0, clip_length=0, axis=0):
+    skip_length=0, start_length=0, clip_length=0, axis=0, mask=None):
     """Compute and generate the slices for a periodogram with 
     given overlap settings, etc."""
     if skip_length != 0 and half_overlap:
@@ -131,7 +132,7 @@ def periodogram_slices(length, total_length, ndim, half_overlap=True,
     else:
        num_intervals = np.floor(data_length//(length))
        start_indices = np.arange(num_intervals, dtype=np.int)*length
-       
+    
     start_indices += start_length
     select = [ slice(None) for i in range(ndim) ]
     for a in start_indices:
@@ -139,18 +140,19 @@ def periodogram_slices(length, total_length, ndim, half_overlap=True,
         assert select[axis].stop - select[axis].start == periodogram_length
         assert isinstance(select[axis].start, int)
         assert isinstance(select[axis].stop, int)
-        yield tuple(select)
+        if mask is None or not mask[select[axis]].any():
+            yield tuple(select)
     
 def periodogram_mask(length, total_length, half_overlap=True, skip_length=0,
-    start_length=0, clip_length=0):
+    start_length=0, clip_length=0, mask=None):
     """Produce a mask of a periodogram showing what regions are accessible,
         and which arent."""
-    mask = np.zeros((total_length,), dtype=bool)
+    outmask = np.zeros((total_length,), dtype=bool)
     for select in periodogram_slices(length, total_length, 1, 
         half_overlap=half_overlap, skip_length=skip_length, 
-        start_length=start_length, clip_length=clip_length):
-        mask[select] = True
-    return mask
+        start_length=start_length, clip_length=clip_length, mask=mask):
+        outmask[select] = True
+    return outmask
     
 def periodogram_excludes(length, total_length, half_overlap=True,
     skip_length=0, start_length=0, clip_length=0):
