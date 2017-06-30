@@ -80,7 +80,8 @@ def periodogram(data, length=None, window=None,
     keys = "mean_remove suppress_static half_overlap skip_length".split()
     log.debug("Parameters: {0:s}".format(" ".join(
         ["{0:s}={1!r}".format(name, locals()[name]) for name in keys])))
-    
+    if mask is not None:
+        log.debug("Using a mask.")
     if window is None:
         log.debug("Defaulting to cosine_window for windowing function.")
         window = cosine_window(periodogram_length)
@@ -89,7 +90,9 @@ def periodogram(data, length=None, window=None,
         window = extend_axes(window, len(psd_shape), fixed_axis=axis)
     
     if mean_remove:
-        data = data - np.expand_dims(data.mean(axis=axis), axis=axis)
+        mask_collapse = list(i for i in range(mask.ndim))
+        del mask_collapse[axis]
+        data = data - np.expand_dims(np.compress(~mask.any(axis=tuple(mask_collapse)), data, axis=axis).mean(axis=axis), axis=axis)
     
     psd = data.__array_prepare__(np.zeros(psd_shape, dtype=np.complex))
     interval_iterator = periodogram_slices(length, total_length,
@@ -103,6 +106,8 @@ def periodogram(data, length=None, window=None,
             segment -= segment.mean()
         psd += np.power(np.abs(fftpack.fft(segment * window, axis=axis)), 2.0)
         num_intervals += 1
+    if not num_intervals:
+        log.warning("Found no valid intervals.")
     psd = np.real(psd)
     psd = psd / (num_intervals)
     psd = psd / np.sum(window**2.0, axis=axis)
