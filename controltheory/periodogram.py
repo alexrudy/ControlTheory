@@ -90,9 +90,13 @@ def periodogram(data, length=None, window=None,
         window = extend_axes(window, len(psd_shape), fixed_axis=axis)
     
     if mean_remove:
-        mask_collapse = list(i for i in range(mask.ndim))
-        del mask_collapse[axis]
-        data = data - np.expand_dims(np.compress(~mask.any(axis=tuple(mask_collapse)), data, axis=axis).mean(axis=axis), axis=axis)
+        if mask is not None:
+            mask_collapse = list(i for i in range(mask.ndim))
+            del mask_collapse[axis]
+            data_mean = np.compress(~mask.any(axis=tuple(mask_collapse)), data, axis=axis).mean(axis=axis)
+        else:
+            data_mean = data.mean(axis=axis)
+        data = data - np.expand_dims(data_mean, axis=axis)
     
     psd = data.__array_prepare__(np.zeros(psd_shape, dtype=np.complex))
     interval_iterator = periodogram_slices(length, total_length,
